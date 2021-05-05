@@ -15,6 +15,8 @@
 import argparse
 import os
 from shutil import copyfile
+from libclean import remove_comments, getscope, evaluate_header,\
+                     replace_commands
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', action='store', type=str)
 parser.add_argument('-o', action='store', type=str)
@@ -37,29 +39,7 @@ elif OUTDIR is None:
 # Step 1: Remove all the comments:
 with open(OUTFILE, 'w') as dest:
     with open(FILE, 'r') as f:
-        can_have_empty = False
-        for line in f:
-            if '\\%' in line:
-                split = line.strip().split('\%')
-                recombine = []
-                for s in split:
-                    if '%' in s:
-                        recombine += [s.split('%')[0] + "%"]
-                        break
-                    else:
-                        recombine += [s]
-                line = '\\%'.join(recombine)
-            else:
-                if "%" in line:
-                    line = line.strip().split('%')[0] + "%"
-                else:
-                    line = line.strip()
-            if len(line) > 0:
-                can_have_empty = True
-                dest.write(line + '\n')
-            elif can_have_empty:
-                dest.write('\n')
-                can_have_empty = False
+        remove_comments(f, dest)
 
 
 ########################################################
@@ -68,110 +48,15 @@ with open(OUTFILE, 'w') as dest:
 #                                                      #
 ########################################################
 
-iftrue = [True]
-iflevel = 0
-
 commands = {"\\replaced" : (2,'#2'), "\\added" : (1, '#1'), "\\deleted" : (1,''),
             "\\replacedincaption" : (2, '#2'), "\\addedincaption" : (1, "#1"),
             "\\deletedincaption" : (1, ""), "\\listofchanges" : (0, ""), "\\replacedlabel" : (1,"\\label{#1}"),
             "\\drafttrue" : (0,""), "\\countchange" : (0, "")}
 
-def getscope(string, i0, begin='{',end='}'):
-    """
-    Get the string and number within the scope starting at i0.
-    """
-    # Skip spaces:
-    i1 = i0
-    while i0 < len(string) and string[i0] in ('\n',' ','\t','%'):
-        i0 += 1
-    if i0 == len(string) or string[i0] != begin:
-        print("STRING:",string)
-        print("i0:",i0,"-->",string[i0] if i0 < len(string) else "<ERROR>")
-        print("i1:",i1)
-        print("len(string):",len(string))
-        raise RuntimeError()
-    level = 1
-    i1 = i0+1
-    N = len(string)
-    escape = False
-    while level > 0 and i1 < N:
-        if escape:
-            escape = False
-        else:
-            c = string[i1]
-            if c == begin:
-                level += 1
-            elif c == end:
-                level -= 1
-            elif c == '\\':
-                escape = True
-        i1 += 1
-    return string[i0+1:i1-1], i1
 
-
-LINES = []
-command_order = []
-prefix = ''
-with open(OUTFILE, 'r') as f:
-    for line in f:
-        line = line.replace("\n","")
-        if '\\ifdefined' in line:
-            if line.split('\\ifdefined')[1] in DEFINES:
-                iftrue += [iftrue[iflevel]]
-            else:
-                iftrue += [False]
-            iflevel += 1
-            continue
-        elif '\\else' in line:
-            iftrue[iflevel] = not iftrue[iflevel]
-            continue
-        elif '\\fi' in line:
-            iftrue = iftrue[:iflevel]
-            iflevel -= 1
-            continue
-        if not iftrue[iflevel]:
-            continue
-        if '\\newcommand' in line:
-            assert line[:11] == '\\newcommand'
-            # Get the command name:
-            s0,i0 = getscope(line,11)
-            # Get optional argument number:
-            if line[i0] == '[':
-                sargs, i0 = getscope(line, i0, begin='[', end=']')
-                nargs = int(sargs)
-            else:
-                nargs = 0
-            # Get the command definition:
-            s1 = getscope(line, i0)[0]
-
-            commands[s0] = (nargs, s1)
-            command_order += [s0]
-        elif '\\newenvironment' in line:
-            assert line[:15] == '\\newenvironment'
-            # Get the environment name:
-            s0,i0 = getscope(line,15)
-            # Get optional argument number:
-            if line[i0] == '[':
-                sargs, i0 = getscope(line, i0, begin='[', end=']')
-                nargs = int(sargs)
-            else:
-                nargs = 0
-            # Get the command definitions:
-            s1,i0 = getscope(line, i0)
-            s2 = getscope(line, i0)[0]
-            # Create commands:
-            cmd_begin = "\\begin{" + s0 + "}"
-            cmd_end = "\\end{" + s0 + "}"
-            commands[cmd_begin] = (nargs, s1)
-            command_order += [cmd_begin]
-            commands[cmd_end] = (0, s2)
-            command_order += [cmd_end]
-        else:
-            if iftrue[iflevel] and line != '%':
-                LINES += [prefix + line]
-
-with open(OUTFILE, 'w') as f:
-    f.writelines(LINES)
+with open(OUTFILE, 'rw') as f:
+    LINES, commands, command_order \
+       = evaluate_header(f, defines=DEFINES, commands=commands)
 
 # Append the revision commands and reverse order:
 command_order += ["\\replaced", "\\added", "\\deleted", "\\replacedincaption", "\\addedincaption",
@@ -185,34 +70,8 @@ command_order = command_order[::-1]
 #   Step 3: Replace iteratively all commands:
 #
 ################################################
-document = "\n".join(LINES)
-with open(OUTFILE, "w") as f:
-    f.write(document)
 
-def replace_command(string, cmd, commands):
-    split = string.split(cmd)
-    dnew = [split[0]]
-    nargs = commands[cmd][0]
-    for s in split[1:]:
-        # First find the arguments:
-        i0 = 0
-        insert = commands[cmd][1]
-        for i in range(nargs):
-            if s[0] == '[':
-                arg, i0 = getscope(s, i0, begin='[', end=']')
-            else:
-                arg, i0 = getscope(s, i0)
-            insert = insert.replace("#" + str(i+1), arg)
-        dnew += [insert, s[i0:]]
-    return "".join(dnew)
-
-
-for i,cmd in enumerate(command_order):
-    # Replace in document:
-    document = replace_command(document, cmd, commands)
-    # Replace in all following commands:
-    for c2 in command_order[i+1:]:
-        commands[c2] = (commands[c2][0], replace_command(commands[c2][1], cmd, commands))
+document, commands = replace_commands("\n".join(LINES), command_order, commands)
 
 with open(OUTFILE, "w") as f:
     f.write(document)
