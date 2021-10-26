@@ -54,7 +54,7 @@ commands = {"\\replaced" : (2,'#2'), "\\added" : (1, '#1'), "\\deleted" : (1,'')
             "\\drafttrue" : (0,""), "\\countchange" : (0, "")}
 
 
-with open(OUTFILE, 'rw') as f:
+with open(OUTFILE, 'r') as f:
     LINES, commands, command_order \
        = evaluate_header(f, defines=DEFINES, commands=commands)
 
