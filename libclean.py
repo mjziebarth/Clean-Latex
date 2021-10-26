@@ -96,16 +96,16 @@ def evaluate_header(src, dest=None, defines=[], commands={}):
         line = line.replace("\n","")
         if '\\ifdefined' in line:
             if line.split('\\ifdefined')[1] in defines:
-                iftrue += [iftrue[iflevel]]
+                iftrue.append(iftrue[iflevel])
             else:
-                iftrue += [False]
+                iftrue.append(False)
             iflevel += 1
             continue
         elif '\\else' in line:
             iftrue[iflevel] = not iftrue[iflevel]
             continue
         elif '\\fi' in line:
-            iftrue = iftrue[:iflevel]
+            iftrue.pop()
             iflevel -= 1
             continue
         if not iftrue[iflevel]:
@@ -142,12 +142,12 @@ def evaluate_header(src, dest=None, defines=[], commands={}):
             cmd_begin = "\\begin{" + s0 + "}"
             cmd_end = "\\end{" + s0 + "}"
             commands[cmd_begin] = (nargs, s1)
-            command_order += [cmd_begin]
+            command_order.append(cmd_begin)
             commands[cmd_end] = (0, s2)
-            command_order += [cmd_end]
+            command_order.append(cmd_end)
         else:
             if iftrue[iflevel] and line != '%':
-                lines += [prefix + line]
+                lines.append(prefix + line)
 
     if dest is not None:
         with open(dest, 'w') as f:
