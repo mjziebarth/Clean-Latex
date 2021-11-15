@@ -92,6 +92,18 @@ def evaluate_header(src, dest=None, defines=[], commands={}):
     iftrue = [True]
     iflevel = 0
     prefix = ''
+
+    # Check whether the \fi command is in the string:
+    breaking_chars = ['\\', ' '] + [str(i)[0] for i in range(10)]
+    def check_fi(string):
+        if '\\fi' not in string:
+            return False
+        print("\\fi in string \"" + string + "\"")
+        substr = string.split("\\fi")[1]
+        if len(substr) == 0:
+            return True
+        return substr[0] in breaking_chars
+
     for line in src:
         line = line.replace("\n","")
         if '\\ifdefined' in line:
@@ -104,7 +116,7 @@ def evaluate_header(src, dest=None, defines=[], commands={}):
         elif '\\else' in line:
             iftrue[iflevel] = not iftrue[iflevel]
             continue
-        elif '\\fi' in line:
+        elif check_fi(line):
             iftrue.pop()
             iflevel -= 1
             continue
