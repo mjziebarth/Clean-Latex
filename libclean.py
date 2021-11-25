@@ -34,13 +34,12 @@ def getscope(string, i0, begin='{',end='}'):
     Get the string and number within the scope starting at i0.
     """
     # Skip spaces:
-    i1 = i0
+    i00 = i0
     while i0 < len(string) and string[i0] in ('\n',' ','\t','%'):
         i0 += 1
     if i0 == len(string) or string[i0] != begin:
         print("STRING:",string)
         print("i0:",i0,"-->",string[i0] if i0 < len(string) else "<ERROR>")
-        print("i1:",i1)
         print("len(string):",len(string))
         raise RuntimeError()
     level = 1
@@ -94,11 +93,10 @@ def evaluate_header(src, dest=None, defines=[], commands={}):
     prefix = ''
 
     # Check whether the \fi command is in the string:
-    breaking_chars = ['\\', ' '] + [str(i)[0] for i in range(10)]
+    breaking_chars = ['\\', ' ', '%'] + [str(i)[0] for i in range(10)]
     def check_fi(string):
         if '\\fi' not in string:
             return False
-        print("\\fi in string \"" + string + "\"")
         substr = string.split("\\fi")[1]
         if len(substr) == 0:
             return True
