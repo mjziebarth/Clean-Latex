@@ -12,21 +12,25 @@ parser.add_argument('-i', action='store', type=str)
 #parser.add_argument('-o', action='store', type=str)
 #parser.add_argument('-d', action='store', type=str)
 parser.add_argument('--defines', action='store', type=str, default="")
+parser.add_argument('--count-section-headings', action='store_true')
+parser.add_argument('--count-appendix', action='store_true')
+parser.add_argument('--count-figure-captions', action='store_true')
+parser.add_argument('--count-table-captions', action='store_true')
 args = parser.parse_args()
 
 # Parsing the arguments:
 FILE = args.i
 OUTFILE = FILE + ".wordcount.tmp.tex"
 DEFINES = ["\\"+d for d in args.defines.split(",")]
-REMOVE_FIGURES = True
-REMOVE_TABLES = True
+REMOVE_FIGURES = not args.count_figure_captions
+REMOVE_TABLES = not args.count_table_captions
 CL_REVISION_COMMANDS = True
 COUNT_REFERENCES = True # If true, count one word for each reference.
 COUNT_FOOTNOTES = False
 COUNT_INLINE_MATHMODE = True # If true, count one word for each inline math mode
 COUNT_SEPARATE_MATHMODE = True # If true, count extra mathmode (e.g. align)
-COUNT_SECTIONS = False # If true, count words in section headings.
-REMOVE_APPENDIX = True
+COUNT_SECTIONS = args.count_section_headings # If true, count words in section headings.
+REMOVE_APPENDIX = not args.count_appendix # If true, remove the appendix from word count.
 KEEP_TMP_OUTFILE = False # If true, keep temporary output file
 
 
