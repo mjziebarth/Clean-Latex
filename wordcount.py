@@ -78,13 +78,14 @@ with TemporaryFile(mode='w+') as out:
         commands |= {"\\footnote" : (1,"")}
 
     #  - Section headings:
-    co_predef += ["\\chapter","\\section","\\subsection","\\subsubsection"]
+    co_predef += ["\\chapter","\\section","\\section*","\\subsection","\\subsection*",
+                  "\\subsubsection","\\subsubsection*"]
     if COUNT_SECTIONS:
-        commands |= {x : (1,"#1") for x in ("\\chapter","\\section","\\subsection",
-                                            "\\subsubsection")}
+        commands |= {x : (1,"#1") for x in ("\\chapter","\\section","\\section*","\\subsection",
+                                            "\\subsection*","\\subsubsection","\\subsubsection*")}
     else:
-        commands |= {x : (1,"") for x in ("\\chapter","\\section","\\subsection",
-                                            "\\subsubsection")}
+        commands |= {x : (1,"") for x in ("\\chapter","\\section","\\section*","\\subsection",
+                                          "\\subsection*","\\subsubsection","\\subsubsection*")}
 
 
     ############################################################
