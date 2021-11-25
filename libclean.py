@@ -113,6 +113,8 @@ def evaluate_header(src, dest=None, defines=[], commands={}):
             continue
         elif '\\else' in line:
             iftrue[iflevel] = not iftrue[iflevel]
+            if iflevel > 0:
+                iftrue[iflevel] = iftrue[iflevel] and iftrue[iflevel-1]
             continue
         elif check_fi(line):
             iftrue.pop()
