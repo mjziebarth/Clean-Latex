@@ -177,16 +177,22 @@ def replace_single_command(string, cmd, commands):
     dnew = [split[0]]
     nargs = commands[cmd][0]
     for s in split[1:]:
-        # First find the arguments:
-        i0 = 0
-        insert = commands[cmd][1]
-        for i in range(nargs):
-            if s[i0] == '[':
-                arg, i0 = getscope(s, i0, begin='[', end=']')
-            else:
-                arg, i0 = getscope(s, i0)
-            insert = insert.replace("#" + str(i+1), arg)
-        dnew += [insert, s[i0:]]
+        # Make sure that the command is not a shorter version of
+        # another command:
+        if s[0].isalpha():
+            dnew.append(s)
+        else:
+            # First find the arguments:
+            i0 = 0
+            insert = commands[cmd][1]
+            for i in range(nargs):
+                if s[i0] == '[':
+                    arg, i0 = getscope(s, i0, begin='[', end=']')
+                else:
+                    arg, i0 = getscope(s, i0)
+                insert = insert.replace("#" + str(i+1), arg)
+            dnew.append(insert)
+            dnew.append(s[i0:])
     return "".join(dnew)
 
 
