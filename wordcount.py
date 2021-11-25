@@ -107,8 +107,12 @@ if CL_REVISION_COMMANDS:
 command_order = command_order[::-1]
 
 
+# TODO this is a hotfix. Should be possible to specify optional argument numbers.
+# Handle optional argument of \includegraphics:
+document = "\n".join(LINES).replace('\includegraphics{','\includegraphics[scale=1]{')
+
 # Replace the custom commands:
-document, commands = replace_commands("\n".join(LINES), command_order, commands)
+document, commands = replace_commands(document, command_order, commands)
 
 
 ################################
