@@ -162,9 +162,9 @@ with open(OUTFILE, "w") as f:
 #   Step 5: Create the bibliography.
 #
 ########################################
-split = document.split("\\bibliography")
+split = document.split("\\bibliography{")
 if len(split) == 2:
-    bibfile, i1 = getscope(split[1], 0)
+    bibfile, i1 = getscope("{"+split[1], 0)
     split[1] = split[1][i1:]
     print("bibliography:",bibfile)
     
