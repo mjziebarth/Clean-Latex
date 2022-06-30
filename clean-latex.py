@@ -230,9 +230,13 @@ if len(split) > 1:
         filename, i1 = getscope(s, i0, '{', '}')
 
         # Then test which file that points to:
+        found_file = False
         for ex in extensions:
             if os.path.isfile(filename + ex):
+                found_file = True
                 break
+        if not found_file:
+            raise RuntimeError("Did not find figure '" + filename + "'.")
 
         # Create the new filename:
         newfilename = filename.split('/')[-1]
