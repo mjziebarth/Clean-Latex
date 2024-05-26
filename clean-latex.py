@@ -22,12 +22,15 @@ parser.add_argument('-i', action='store', type=str)
 parser.add_argument('-o', action='store', type=str)
 parser.add_argument('-d', action='store', type=str)
 parser.add_argument('--defines', action='store', type=str, default="")
+parser.add_argument('--enumerate-figures', action='store_const',
+                    default=False, const=True)
 args = parser.parse_args()
 
 FILE = args.i   #'pbpsha_paper.tex'
 OUTFILE = args.o   # 'jgr-submit-clean.tex'
 OUTDIR = args.d
 DEFINES = tuple(args.defines.split(",")) #('\\agudraft',)
+print("DEFINES:",DEFINES)
 
 if FILE is None:
     raise RuntimeError("No input file given.")
@@ -92,6 +95,10 @@ previous_empty = True
 previous_endbegin = False
 in_empty_environment = 0
 for line in lines_in:
+    # Check if the line ends on a comment.
+    # We need to catch here the case that the line ends on
+    # a text percentage sign '\%'.
+    # If the line ends on a comment, remove the comment.
     end_comment = len(line) > 0 and line[-1] == '%' and \
                   (len(line) == 1 or line[-2] != '\\')
     if end_comment:
@@ -129,9 +136,9 @@ for line in lines_in:
         # Check for some empty environmets:
         if "\\begin{figure" in line:
             in_empty_environment += 1
-        # Remove previous empty lines:
-        while lines_out[-1][1]:
-            del lines_out[-1]
+#        # Remove previous empty lines:
+#        while lines_out[-1][1]:
+#            del lines_out[-1]
         lines_out += [(prefix + line + suffix, False)]
         prefix += "\t"
         previous_endbegin = True
@@ -239,7 +246,14 @@ if len(split) > 1:
             raise RuntimeError("Did not find figure '" + filename + "'.")
 
         # Create the new filename:
-        newfilename = filename.split('/')[-1]
+        if args.enumerate_figures:
+            if i < 9:
+                numstr = '0'+ str(i+1)
+            else:
+                numstr = str(i+1)
+            newfilename = 'Fig' + numstr + '-' + filename.split('/')[-1]
+        else:
+            newfilename = filename.split('/')[-1]
 
         # Remember:
         imagefiles += [(filename, newfilename, ex)]

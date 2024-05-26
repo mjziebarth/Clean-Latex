@@ -111,7 +111,7 @@ def evaluate_header(src, dest=None, defines=[], commands={}):
                 iftrue.append(False)
             iflevel += 1
             continue
-        elif '\\else' in line:
+        elif '\\else' in line and '\\ifmmode' not in line:
             iftrue[iflevel] = not iftrue[iflevel]
             if iflevel > 0:
                 iftrue[iflevel] = iftrue[iflevel] and iftrue[iflevel-1]
